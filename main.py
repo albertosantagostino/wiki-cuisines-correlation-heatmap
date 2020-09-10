@@ -99,13 +99,10 @@ def step3_fill_lengths():
     params = {'action': 'query', 'prop': 'info', 'format': 'json'}
     for kk, vv in tqdm(cuisines.items()):
         for lang_prefix, page in tqdm(vv['languages'].items()):
-            #print(lang_prefix)
-            #print(time.perf_counter())
             if lang_prefix != 'en' and lang_prefix not in LANGS_TO_SKIP:
                 wiki_url = page['wiki_url']
                 api_url = f'https://{wiki_url}/w/api.php'
                 params['titles'] = page['title']
-                print(f"\n{kk} - {lang_prefix}\n")
                 with requests.Session() as session:
                     post = session.post(api_url, params)
                     if post.ok:
@@ -114,17 +111,11 @@ def step3_fill_lengths():
                         print("Issue in POST call")
                         print(f"{api_url}\n{params}")
                         ipdb.set_trace()
-
-                    page_data = res['query']['pages'][next(iter(res['query']['pages']))]
-                    if 'length' in page_data:
-                        vv['languages'][lang_prefix]['length'] = page_data['length']
-                    else:
-                        print(f"No length for {kk} in language {lang_prefix}, skipped")
-                try:
-                    length = res['query']['pages'][next(iter(res['query']['pages']))]['length']
-                    vv['languages'][lang_prefix]['length'] = length
-                except (KeyError, json.decoder.JSONDecodeError) as error:
-                    print(f"Error while getting length for {kk} in language {lang_prefix}")
+                page_data = res['query']['pages'][next(iter(res['query']['pages']))]
+                if 'length' in page_data:
+                    vv['languages'][lang_prefix]['length'] = page_data['length']
+                else:
+                    print(f"No length for {kk} in language {lang_prefix}, skipped")
     save('data/cuisines_length.dat', cuisines)
 
 
