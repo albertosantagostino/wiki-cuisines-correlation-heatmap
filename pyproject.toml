@@ -8,9 +8,9 @@ authors = ["Alberto Santagostino"]
 python = "^3.8"
 wikipedia = "^1.4.0"
 beautifulsoup4 = "^4.9.1"
-progressbar = "^2.5"
 pandas = "^1.1.1"
 seaborn = "^0.10.1"
+tqdm = "^4.48.2"
 
 [tool.poetry.dev-dependencies]
 ipdb = "^0.13.3"
