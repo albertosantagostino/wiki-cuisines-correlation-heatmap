@@ -79,7 +79,6 @@ def step2_populate_other_languages():
 
 
 def step3_fill_lengths():
-
     # TODO: Refactor: group together pages and do only one request for every xyz.wikipedia.org
     cuisines = load_from_file('data/cuisines_langs.dat')
     params = {'action': 'query', 'prop': 'info', 'format': 'json'}
@@ -118,71 +117,6 @@ def get_wikimedia_languages_list():
         code = code.replace(':', '')
         wiki_languages[code] = {'eng_name': english_name, 'local_name': local_name}
     save_to_file('data/wiki_languages.dat', wiki_languages)
-
-
-def step4_preprocess_data_frame_OLD(cuisines):
-    # Set pandas view options
-    pd.set_option('display.max_rows', None)
-    pd.set_option('display.max_columns', None)
-    pd.set_option('display.width', None)
-    pd.set_option('display.max_colwidth', None)
-
-    # Find languages to consider
-    languages = set()
-    for kk, vv in cuisines.items():
-        for lang in [*vv['languages'].keys()]:
-            languages.add(lang)
-    languages = [*languages]
-    languages.sort()
-    languages.insert(0, 'cuisine')
-
-    # Create full table
-    df_fulltable = pd.DataFrame(columns=languages)
-    for kk, vv in tqdm(cuisines.items()):
-        entry = {kk2: vv2['length'] for kk2, vv2 in vv['languages'].items() if 'length' in vv2}
-        entry['cuisine'] = kk
-        df_fulltable = df_fulltable.append(entry, ignore_index=True)
-
-    # TODO: Refactor this section to use pandas for finding the languages with less cuisines
-    # Get languages with less cuisines pages
-    wl = load_from_file('data/wiki_languages.dat')
-    df_pages_per_lang = pd.DataFrame(173 - df_fulltable.isnull().sum()).to_dict()[0]
-    del df_pages_per_lang['cuisine']
-    res2 = {}
-    for kk, vv in df_pages_per_lang.items():
-        if kk in wl:
-            res2[wl[kk]['eng_name']] = {'cuisines_pages': vv, 'lang_prefix': kk}
-    df_lang_count = pd.DataFrame(res2, index=['cuisines_pages', 'lang_prefix'])
-    df_lang_count = df_lang_count.transpose()
-    df_lang_count = df_lang_count.sort_values('cuisines_pages', ascending=False)
-    # Keep first LANGS_TO_KEEP languages
-    languages_to_keep = df_lang_count['lang_prefix'][0:defs.LANGS_TO_KEEP].to_list()
-    #languages_to_keep.sort()
-
-    # Recreate table with remaining languages
-    df_table_reduced_langs = pd.DataFrame(columns=languages_to_keep)
-    for kk, vv in cuisines.items():
-        entry = {}
-        for lang in languages_to_keep:
-            if lang in vv['languages']:
-                try:
-                    entry[lang] = vv['languages'][lang]['length']
-                except KeyError:
-                    print(f"KeyError processing {vv['languages'][lang]}")
-        entry['cuisine'] = kk
-        df_table_reduced_langs = df_table_reduced_langs.append(entry, ignore_index=True)
-
-    count_pages = {}
-    for idx, row in df_table_reduced_langs.iterrows():
-        count_pages[row['cuisine']] = row.count() - 1
-
-    # Get cuisines pages less translated
-    df_pages_count = pd.DataFrame(count_pages, index=['count'])
-    df_pages_count = df_pages_count.transpose()
-    df_pages_count = df_pages_count.sort_values('count', ascending=False)
-    # Keep first CUISINES_TO_KEEP pages
-    cuisines_to_keep = df_pages_count[0:defs.CUISINES_TO_KEEP].index.to_list()
-    #cuisines_to_keep.sort()
 
 
 def step4_preprocess_data_frame():
@@ -239,26 +173,6 @@ def step4_preprocess_data_frame():
     save_to_file('data/table_dataframe.dat', df_fulltable)
 
 
-#def create_correlation_lang_cuisines():
-#    cuisines = load_from_file('data/cuisines_length.dat')
-#    wl = load_from_file('data/wiki_languages.dat')
-#    wl_lookup = {vv['eng_name']: kk for kk, vv in wl.items()}
-#    wiki_cuisines_languages = {kk: '' for kk in [*cuisines.keys()]}
-#    for kk in wiki_cuisines_languages.keys():
-#        kk = kk.replace('Cuisine of the', '')
-#        kk = kk.replace('Cuisine of ', '')
-#        if kk.split()[0][-2:] == 'an':
-#            adjective = kk.split()[0]
-#            if adjective[:-2] in wl_lookup:
-#                wiki_cuisines_languages[kk] = wl_lookup[adjective[:-2]]
-#            elif adjective[:-3] in wl_lookup:
-#                wiki_cuisines_languages[kk] = wl_lookup[adjective[:-3]]
-#            elif adjective in wl_lookup:
-#                wiki_cuisines_languages[kk] = wl_lookup[adjective]
-#
-#    ipdb.set_trace()
-#    print(len([kk for kk, vv in wiki_cuisines_languages.items() if vv]))
-
 # yapf: disable
 STEPS = [ step1_prepare_cuisines_data,
           step2_populate_other_languages,
@@ -281,8 +195,6 @@ def main():
 
     if not Path('data/wiki_languages.dat').exists():
         get_wikimedia_languages_list()
-    #if not Path('data/wiki_cuisines_languages.dat').exists():
-    #    create_correlation_lang_cuisines()
 
     cc1 = load_from_file('data/cuisines_raw.dat')
     cc2 = load_from_file('data/cuisines_langs.dat')
