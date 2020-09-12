@@ -1,6 +1,6 @@
-# Wikipedia cuisines (cooking cultures) correlation matrix
+# Wikipedia cuisines (cooking cultures) correlation heatmap
 
-This project aims to obtain a [correlation matrix](https://www.displayr.com/what-is-a-correlation-matrix/) between different languages Wikipedias and the length of [cuisines](https://en.wikipedia.org/wiki/Cuisine) pages
+This project aims to obtain a [heatmap](https://en.wikipedia.org/wiki/Heat_map) between different languages Wikipedias and the length of [cuisines](https://en.wikipedia.org/wiki/Cuisine) pages
 
 ### Mmmh... What?
 
@@ -15,7 +15,7 @@ Every cell represents graphically and numerically the **length of the page** in 
 
 * To find some unexpected correlation, for example:  
   _"It seems that South-American country X seems to be really interested in cuisines from Asiatic country Y but seems that has a little regarding cuisine from Z"_
-  
+
 * Most importantly to have a framework ready to perform similar analysis in the future
 
-* Because correlation matrices are [really nice to look at](https://duckduckgo.com/?q=correlation+matrix+colored&iax=images&ia=images)!
+* Because heatmaps are [really nice to look at](https://duckduckgo.com/?q=heatmap+correlation+colored&iax=images&ia=images)!

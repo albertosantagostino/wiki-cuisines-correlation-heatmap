@@ -29,3 +29,6 @@ MANIFEST
 # Test
 .pytest_cache/
 
+# Data .dat files
+data/**.dat
+
