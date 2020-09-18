@@ -17,6 +17,7 @@ import ipdb
 
 
 def get_flags_from_demonyms(country_demonyms):
+    """Return a list of flags that correspond with the provided list of demonyms (adjectives)"""
     country_demonyms_lookup = json.load(open(Path('data/lookup_countries_demonyms.json'), 'r'))[0]
     flags = []
     for demonym in country_demonyms:
@@ -34,6 +35,7 @@ def get_flags_from_demonyms(country_demonyms):
 
 
 def get_languages_names(language_prefixes):
+    """Return a list of extended language names given a list of 2-letters prefixes"""
     lang_lookup = json.load(open(Path('data/lookup_languages.json'), 'r'))
     lang_lookup_dict = {kk['code']: kk['name'] for kk in lang_lookup}
     language_names = []
@@ -49,8 +51,8 @@ def get_languages_names(language_prefixes):
 def step5_plot_table(df):
     df = df.transpose()
 
+    # Replace language abbreviation with language name and sort the DataFrame
     if defs.Y_REPLACE_LANGUAGES_ABBREVIATIONS:
-        # Replace language abbreviation with language name and sort the DataFrame
         languages = df.index.to_list()
         renaming_map = {lang: name for lang, name in zip(languages, get_languages_names(languages))}
         df.rename(index=renaming_map, inplace=True)
@@ -62,23 +64,7 @@ def step5_plot_table(df):
     xlabels = df.columns.to_list()
     ylabels = df.index.to_list()
 
-    # yapf: disable
-    colorscale=[[0, "rgb(178, 233, 201)"],
-                [0.1, "rgb(91, 207, 139)"],
-                [0.2, "rgb(69, 201, 123)"],
-                [0.3, "rgb(48, 164, 96)"],
-                [0.4, "rgb(35, 121, 70)"],
-                [0.5, "rgb(29, 99, 58)"],
-                [0.6, "rgb(22, 77, 45)"],
-                [0.7, "rgb(16, 55, 32)"],
-                [0.8, "rgb(10, 33, 19)"],
-                [0.9, "rgb(10, 33, 19)"],
-                [1.0, "rgb(10, 33, 19)"]]
-    # yapf: enable
-
-    colorbar = dict(tick0=defs.THRESHOLD_MIN_VOICE_LENGTH, dtick=40000)
-
-    # xlabel handle exceptions
+    # Handle demonyms exceptions manually
     replacements = {"Bosnia and Herzegovina": "Bosnian", "Kazakh": "Kazakhstani", "Nepalese": "Nepali"}
     new_xlabels = copy.deepcopy(xlabels)
     for idx, el in enumerate(xlabels):
@@ -86,6 +72,7 @@ def step5_plot_table(df):
             new_xlabels[idx] = replacements[el]
     xlabels = new_xlabels
 
+    # Apply modification if defined in defs.py
     if defs.Y_ADD_LANGUAGE:
         ylabels = [f"{kk} language" for kk in ylabels]
     if defs.X_ADD_FLAGS:
@@ -100,16 +87,17 @@ def step5_plot_table(df):
     if defs.X_ADD_CUISINE:
         xlabels = [f"{kk} cuisine" for kk in xlabels]
 
+    # Create figure and update the layout
+    # yapf: disable
     fig = go.Figure(
         data=go.Heatmap(x=xlabels,
                         y=ylabels,
                         z=rows,
                         zmin=38,
-                        colorscale=colorscale,
-                        colorbar=colorbar,
+                        colorscale=defs.HEATMAP_COLORSCALE_GREEN,
+                        colorbar={'tick0': defs.THRESHOLD_MIN_VOICE_LENGTH,
+                                  'dtick': 40000},
                         hovertemplate="Cuisine: %{x}<br>Wikipedia language: %{y}<br>Voice length: %{z}<extra></extra>"))
-
-    # yapf: disable
     fig.update_layout(xaxis={'side': 'top',
                              'tickangle': -60,
                              'tickfont': {'size': 14}},
@@ -135,5 +123,5 @@ def step5_plot_table(df):
                                     'yref': 'paper'}])
     # yapf: enable
 
+    # Visualize the figure in the browser
     fig.show()
-    ipdb.set_trace()
