@@ -160,6 +160,7 @@ def step4_preprocess_data_frame():
     for entry in short_voices:
         df_fulltable.at[entry[1], entry[0]] = np.nan
 
+    # TODO:Fix: depending on the order different results are obtained
     # Keep all languages that have least THRESHOLD_MIN_CUISINES written
     df_fulltable.dropna(axis=1, thresh=defs.THRESHOLD_MIN_CUISINES, inplace=True)
     # Keep all cuisines that appears in at least THRESHOLD_MIN_LANGUAGES languages

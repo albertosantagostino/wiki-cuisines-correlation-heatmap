@@ -91,6 +91,17 @@ version = "4.4.2"
 
 [[package]]
 category = "main"
+description = "Emoji for Python"
+name = "emoji"
+optional = false
+python-versions = "*"
+version = "0.6.0"
+
+[package.extras]
+dev = ["pytest", "coverage", "coveralls"]
+
+[[package]]
+category = "main"
 description = "Internationalized Domain Names in Applications (IDNA)"
 name = "idna"
 optional = false
@@ -520,7 +531,7 @@ python-versions = "*"
 version = "1.12.1"
 
 [metadata]
-content-hash = "8ed53eb1cb15643d95a727a93bb6a708355276ce03e8ebefe68ec73bf02b2bfb"
+content-hash = "4c7265ad5885a2d835d0b29d6c7c1a1c1844afc5bed22d39da021208f5199ea9"
 lock-version = "1.0"
 python-versions = "^3.8"
 
@@ -561,6 +572,9 @@ cycler = [
 decorator = [
     {file = "decorator-4.4.2-py2.py3-none-any.whl", hash = "sha256:41fa54c2a0cc4ba648be4fd43cff00aedf5b9465c9bf18d64325bc225f08f760"},
     {file = "decorator-4.4.2.tar.gz", hash = "sha256:e3a62f0520172440ca0dcc823749319382e377f37f140a0b99ef45fecb84bfe7"},
+]
+emoji = [
+    {file = "emoji-0.6.0.tar.gz", hash = "sha256:e42da4f8d648f8ef10691bc246f682a1ec6b18373abfd9be10ec0b398823bd11"},
 ]
 idna = [
     {file = "idna-2.10-py2.py3-none-any.whl", hash = "sha256:b97d804b1e9b523befed77c48dacec60e6dcb0b5391d57af6a65a312a90648c0"},
