@@ -106,6 +106,7 @@ def step5_plot_table(df):
                       xaxis_showgrid=False,
                       yaxis_showgrid=False,
                       margin={'l': 120, 'r': 20, 't': 120, 'b': 20},
+                      plot_bgcolor='rgb(245,245,250)',
                       annotations=[{'x': 0.5,
                                     'y': 1.15,
                                     'showarrow': False,
