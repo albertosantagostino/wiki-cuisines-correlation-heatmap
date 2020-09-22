@@ -132,22 +132,7 @@ def step5_plot_table(df):
                                   'dtick': 40000},
                         hovertemplate="Cuisine: %{x}<br>Wikipedia language: %{y}<br>Voice length: %{z}<extra></extra>"))
     # Set annotations
-    annotations=[{'x': 0.5,
-                  'y': 1.15,
-                  'showarrow': False,
-                  'text': 'CUISINES',
-                  'font': {'size': defs.AXIS_ANNOTATION_TEXT_SIZE},
-                  'xref': 'paper',
-                  'yref': 'paper'},
-                 {'x': -0.07,
-                  'y': 0.5,
-                  'showarrow': False,
-                  'text': 'LANGUAGES',
-                  'font': {'size': defs.AXIS_ANNOTATION_TEXT_SIZE},
-                  'textangle': -90,
-                  'xref': 'paper',
-                  'yref': 'paper'}]
-
+    annotations=[]
     for n, (row, ylabel) in enumerate(zip(rows, ylabels)):
         for m, (val, xlabel) in enumerate(zip(row, xlabels)):
             annotations.append(go.layout.Annotation(text=check_if_diagonal_value(xlabel,ylabel),
@@ -157,10 +142,12 @@ def step5_plot_table(df):
                                                     xref='x1',
                                                     yref='y1',
                                                     showarrow=False))
-    fig_hm.update_layout(xaxis={'side': 'top',
+    fig_hm.update_layout(xaxis={'title': {'text': 'CUISINES','font': {'size': defs.AXIS_TITLE_TEXT_SIZE}},
+                                'side': 'top',
                                 'tickangle': -60,
                                 'tickfont': {'size': 14}},
-                         yaxis={'side': 'left',
+                         yaxis={'title': {'text': 'WIKIPEDIA LANGUAGES','font': {'size': defs.AXIS_TITLE_TEXT_SIZE}},
+                                'side': 'left',
                                 'tickfont': {'size': 14}},
                          xaxis_showgrid=False,
                          yaxis_showgrid=False,
@@ -171,6 +158,7 @@ def step5_plot_table(df):
 
     # Visualize the figure in the browser
     fig_hm.show()
+    ipdb.set_trace()
 
     fig_sum_cuisines = go.Figure(data=go.Bar(
         y=df.transpose().sum().values,
@@ -182,8 +170,6 @@ def step5_plot_table(df):
         x=df.sum().index,
     ))
     fig_sum_langs.show()
-
-    ipdb.set_trace()
 
     # Distribution figure
     fig = go.Figure()

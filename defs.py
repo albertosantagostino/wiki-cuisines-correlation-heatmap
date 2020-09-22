@@ -17,7 +17,7 @@ X_ADD_FLAGS = True
 Y_ADD_FLAGS = True
 
 # Plot layout
-AXIS_ANNOTATION_TEXT_SIZE = 16
+AXIS_TITLE_TEXT_SIZE = 16
 
 # Heatmap color palettes
 # yapf: disable
