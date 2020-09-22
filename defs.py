@@ -5,9 +5,9 @@ Constants/settings definition
 """
 
 # Thresholds for processing and data creation
-THRESHOLD_MIN_CUISINES = 12
+THRESHOLD_MIN_CUISINES = 14
 THRESHOLD_MIN_LANGUAGES = 12
-THRESHOLD_MIN_VOICE_LENGTH = 5000
+THRESHOLD_MIN_VOICE_LENGTH = 4000
 
 # Preprocessing for visualization
 Y_REPLACE_LANGUAGES_ABBREVIATIONS = True
@@ -32,15 +32,10 @@ HEATMAP_COLORSCALE_GREEN=[[0,   "rgb(178, 233, 201)"],
                           [0.8, "rgb(10, 33, 19)"],
                           [0.9, "rgb(10, 33, 19)"],
                           [1.0, "rgb(10, 33, 19)"]]
-HEATMAP_COLORSCALE_BLUE=[[0,   "rgb(209, 231, 255)"],
-                         [0.1, "rgb(180, 218, 254)"],
-                         [0.2, "rgb(129, 193, 253)"],
-                         [0.3, "rgb(79, 168, 252)"],
-                         [0.4, "rgb(29, 144, 252)"],
-                         [0.5, "rgb(3, 118, 226)"],
-                         [0.6, "rgb(3, 92, 176)"],
-                         [0.7, "rgb(2, 66, 126)"],
-                         [0.8, "rgb(1, 39, 75)"],
-                         [0.9, "rgb(1, 39, 75)"],
-                         [1.0, "rgb(1, 39, 75)"]]
+HEATMAP_COLORSCALE_BLUE=[[0,   "rgb(197, 226, 254)"],
+                         [0.1, "rgb(119, 188, 253)"],
+                         [0.2, "rgb(42, 150, 252)"],
+                         [0.3, "rgb(3, 131, 252)"],
+                         [0.4, "rgb(50, 111, 213)"],
+                         [1.0, "rgb(100, 0, 150)"]]
 # yapf: enable

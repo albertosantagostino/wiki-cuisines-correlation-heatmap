@@ -19,8 +19,6 @@ from utils import strip_url, save_to_file, load_from_file, execute_steps
 from visualization import step5_plot_table
 import defs
 
-import ipdb
-
 
 def step1_prepare_cuisines_data():
     cuisines_template_page = wiki.WikipediaPage('Template:Cuisines')
@@ -95,7 +93,6 @@ def step3_fill_lengths():
                     else:
                         print("Issue in POST call")
                         print(f"{api_url}\n{params}")
-                        ipdb.set_trace()
                 page_data = res['query']['pages'][next(iter(res['query']['pages']))]
                 if 'length' in page_data:
                     vv['languages'][lang_prefix]['length'] = page_data['length']
@@ -119,10 +116,19 @@ def get_wikimedia_languages_list():
     save_to_file('data/wiki_languages.dat', wiki_languages)
 
 
-def step4_preprocess_data_frame():
-    # Set threshold
-
+def step4_preprocess_data_frame(no_threshold_application=False):
     cuisines = load_from_file('data/cuisines_length.dat')
+
+    if no_threshold_application:
+        threshold_min_voice_length = 0
+        threshold_min_cuisines = 0
+        threshold_min_languages = 0
+        filename = 'data/table_dataframe_full.dat'
+    else:
+        threshold_min_voice_length = defs.THRESHOLD_MIN_VOICE_LENGTH
+        threshold_min_cuisines = defs.THRESHOLD_MIN_CUISINES
+        threshold_min_languages = defs.THRESHOLD_MIN_LANGUAGES
+        filename = 'data/table_dataframe.dat'
 
     # Set pandas view options
     pd.set_option('display.max_rows', None)
@@ -154,7 +160,7 @@ def step4_preprocess_data_frame():
     for (c_name, c_data) in df_fulltable.iteritems():
         if c_name != 'Cuisine':
             for entry in c_data.iteritems():
-                if not pd.isna(entry[1]) and int(entry[1]) < defs.THRESHOLD_MIN_VOICE_LENGTH:
+                if not pd.isna(entry[1]) and int(entry[1]) < threshold_min_voice_length:
                     short_voices.append((c_name, entry[0], entry[1]))
 
     for entry in short_voices:
@@ -162,25 +168,22 @@ def step4_preprocess_data_frame():
 
     # TODO:Fix: depending on the order different results are obtained
     # Keep all languages that have least THRESHOLD_MIN_CUISINES written
-    df_fulltable.dropna(axis=1, thresh=defs.THRESHOLD_MIN_CUISINES, inplace=True)
+    df_fulltable.dropna(axis=1, thresh=threshold_min_cuisines, inplace=True)
     # Keep all cuisines that appears in at least THRESHOLD_MIN_LANGUAGES languages
-    df_fulltable = df_fulltable[df_fulltable.isnull().sum(axis=1) < len(df_fulltable.columns) -
-                                defs.THRESHOLD_MIN_LANGUAGES]
+    df_fulltable = df_fulltable[df_fulltable.isnull().sum(axis=1) < len(df_fulltable.columns) - threshold_min_languages]
 
     df_fulltable.reset_index(drop=True, inplace=True)
     df_fulltable.set_index('Cuisine', inplace=True)
     df_fulltable.columns.names = ['Wikipedia language']
 
-    save_to_file('data/table_dataframe.dat', df_fulltable)
+    save_to_file(filename, df_fulltable)
 
 
 # yapf: disable
-STEPS = [ step1_prepare_cuisines_data,
-          step2_populate_other_languages,
-          step3_fill_lengths,
-          step4_preprocess_data_frame,
-          #step5_plot_table
-        ]
+STEPS = [step1_prepare_cuisines_data,
+         step2_populate_other_languages,
+         step3_fill_lengths,
+         step4_preprocess_data_frame]
 # yapf: enable
 
 
@@ -193,6 +196,7 @@ def main():
         execute_steps(STEPS, [i for i in range(2, len(STEPS))])
     elif not Path('data/table_dataframe.dat').exists():
         execute_steps(STEPS, [i for i in range(3, len(STEPS))])
+        step4_preprocess_data_frame(no_threshold_application=True)
 
     if not Path('data/wiki_languages.dat').exists():
         get_wikimedia_languages_list()
@@ -201,6 +205,7 @@ def main():
     cc2 = load_from_file('data/cuisines_langs.dat')
     cc3 = load_from_file('data/cuisines_length.dat')
     cc4 = load_from_file('data/table_dataframe.dat')
+    cc5 = load_from_file('data/table_dataframe_full.dat')
     wl = load_from_file('data/wiki_languages.dat')
 
     step5_plot_table(cc4)
