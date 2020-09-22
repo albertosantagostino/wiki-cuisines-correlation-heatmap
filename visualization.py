@@ -62,13 +62,9 @@ def check_if_diagonal_value(mm, nn):
         print(f"Unknown key ({country})")
         return ''
     # From country to language
-    country_languages_lookup = json.load(open(Path('data/lookup_jsons/lookup_countries_languages.json'), 'r'))
-    country_languages_lookup_dict = {
-        kk['country_name']: kk['lang_name']
-        for kk in country_languages_lookup if 'lang_name' in kk
-    }
+    country_languages_lookup = json.load(open(Path('data/lookup_jsons/lookup_countries_languages.json'), 'r'))[0]
     try:
-        language = country_languages_lookup_dict[country]
+        language = country_languages_lookup[country]
     except KeyError:
         print(f"Unknown key ({country})")
         return ''
