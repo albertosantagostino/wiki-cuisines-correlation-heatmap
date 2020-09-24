@@ -208,7 +208,8 @@ def main():
     cc5 = load_from_file('data/table_dataframe_full.dat')
     wl = load_from_file('data/wiki_languages.dat')
 
-    step5_plot_table(cc4)
+    # Plot dataframe
+    step5_plot_table(cc4, cc5)
 
 
 if __name__ == '__main__':
