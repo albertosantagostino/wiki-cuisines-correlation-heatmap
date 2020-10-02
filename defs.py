@@ -36,7 +36,7 @@ HEATMAP_COLORSCALE_BLUE = [[0,   "rgb(197, 226, 254)"],
                            [0.2, "rgb(42, 150, 252)"],
                            [0.3, "rgb(3, 131, 252)"],
                            [0.4, "rgb(50, 111, 213)"],
-                           [1.0, "rgb(100, 0, 150)"]]
+                           [1.0, "rgb(126, 0, 173)"]]
 # yapf: enable
 
 DEMONYMS_EXCEPTIONS = {'Bosnia and Herzegovina': 'Bosnian', 'Kazakh': 'Kazakhstani', 'Nepalese': 'Nepali'}
@@ -45,3 +45,4 @@ DEMONYMS_EXCEPTIONS = {'Bosnia and Herzegovina': 'Bosnian', 'Kazakh': 'Kazakhsta
 SHOW_RESULTS = True
 STORE_HTML = True
 STORE_IMAGE = True
+STORE_STATISTICS = True

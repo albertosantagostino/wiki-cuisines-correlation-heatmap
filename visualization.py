@@ -7,14 +7,15 @@ Visualization and plotting
 import copy
 import emoji
 import json
+import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import re
 
 from pathlib import Path
+from utils import load_from_file
 
 import defs
-import ipdb
 
 # yapf: disable
 CUMULATIVE_GRAPHS_LAYOUT = {'xaxis': {'tickangle': 60,
@@ -88,8 +89,7 @@ def check_if_diagonal_value(mm, nn):
         return ''
 
 
-def step5_plot_table(df, df_full):
-    # Set plotly as pandas backend
+def step5_create_plots(df, df_full):
     pd.options.plotting.backend = 'plotly'
 
     # Replace language abbreviation with language name, sort the DataFrame
@@ -164,13 +164,13 @@ def step5_plot_table(df, df_full):
     fig_sum_cuisines = go.Figure(data=go.Bar(x=df_full.transpose().sum().index,
                                              y=df_full.transpose().sum().values,
                                              marker={'color': df_full.transpose().sum().values,
-                                                     'colorscale': 'cividis'}),
+                                                     'colorscale': defs.HEATMAP_COLORSCALE_BLUE}),
                                  layout=CUMULATIVE_GRAPHS_LAYOUT)
 
     fig_sum_languages = go.Figure(data=go.Bar(x=df_full.sum().index,
                                               y=df_full.sum().values,
                                               marker={'color': df_full.sum().values,
-                                                      'colorscale': 'cividis'}),
+                                                      'colorscale': defs.HEATMAP_COLORSCALE_BLUE}),
                                   layout=CUMULATIVE_GRAPHS_LAYOUT)
 
     fig_hist = df_full.hist()
@@ -181,10 +181,60 @@ def step5_plot_table(df, df_full):
                'historgram_length': fig_hist}
     # yapf: enable
 
-    for fig_name, fig in figures.items():
-        if defs.SHOW_RESULTS:
+    if defs.STORE_STATISTICS:
+        pd.set_option('display.float_format', '{:.0f}'.format)
+        pd.set_option('display.max_rows', None)
+        pd.set_option('display.max_colwidth', None)
+        # Cuisine leaderboard
+        sum_data = df_full.transpose().sum().astype(int)
+        leaderboard = sum_data.to_frame('length').sort_values('length', ascending=False)
+        leaderboard.index = [
+            f"{flag} {cuisine}"
+            for flag, cuisine in zip(get_flags_from_demonyms(leaderboard.index), leaderboard.index.to_list())
+        ]
+        with open(Path(f'results/cuisines_leaderboard.md'), 'w') as fp:
+            fp.write(leaderboard.to_markdown())
+        # Top voices
+        cc2 = load_from_file('data/cuisines_langs.dat')
+        df_topvoices = pd.DataFrame(columns=['cuisine', 'language', 'length', 'url'])
+        # yapf: disable
+        for cuisine, row in df_full.iterrows():
+            for language, length in row.to_frame('length').sort_values('length',ascending=False)[0:3]['length'].iteritems():
+                if not np.isnan(length):
+                    df_topvoices = df_topvoices.append({'cuisine': cuisine,
+                                                        'language': language,
+                                                        'length': length,},
+                                                       ignore_index=True)
+        # yapf: enable
+        df_topvoices = df_topvoices.sort_values('length', ascending=False)[0:10]
+        df_topvoices.reset_index(drop=True, inplace=True)
+        urls = {}
+        for idx, row in df_topvoices.iterrows():
+            wikipage = cc2[f'{row["cuisine"]} cuisine']['languages'][row['language']]
+            if row['language'] == 'en':
+                wikiurl = 'en.wikipedia.org'
+            else:
+                wikiurl = wikipage['wiki_url']
+            urls[idx] = f'[{row["cuisine"]} cuisine ({row["language"]})]' + '(https://' + wikiurl + '/wiki/' + wikipage[
+                'title'].replace(' ', '_') + ')'
+        for kk, vv in urls.items():
+            df_topvoices['url'][kk] = vv
+        df_topvoices['cuisine'] = [
+            f"{flag} {cuisine}" for flag, cuisine in zip(get_flags_from_demonyms(df_topvoices['cuisine']),
+                                                         df_topvoices['cuisine'].to_list())
+        ]
+        df_topvoices['language'] = get_languages_names(df_topvoices['language'])
+
+        with open(Path(f'results/cuisines_top.md'), 'w') as fp:
+            fp.write(df_topvoices.to_markdown())
+
+    # Show plots in-browser
+    if defs.SHOW_RESULTS:
+        for fig_name, fig in figures.items():
             fig.show()
 
+    # Store results (html/images)
+    Path('results').mkdir(parents=True, exist_ok=True)
     for fig_name, fig in figures.items():
         if defs.STORE_HTML:
             with open(Path(f'results/{fig_name}.html'), 'w+') as fp:
@@ -193,4 +243,4 @@ def step5_plot_table(df, df_full):
             # Remove axes titles for image
             fig.update_layout(xaxis={'title': {'text': ''}}, yaxis={'title': {'text': ''}})
             with open(Path(f'results/{fig_name}.jpg'), 'wb+') as fp:
-                fp.write(fig.to_image(format='jpg', width=1920, height=1080, scale=1.2))
+                fp.write(fig.to_image(format='jpg', width=1920, height=1080, scale=2.0))

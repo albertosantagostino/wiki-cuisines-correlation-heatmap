@@ -16,7 +16,7 @@ from urllib.request import urlopen
 from tqdm import tqdm
 
 from utils import strip_url, save_to_file, load_from_file, execute_steps
-from visualization import step5_plot_table
+from visualization import step5_create_plots
 import defs
 
 
@@ -209,7 +209,7 @@ def main():
     wl = load_from_file('data/wiki_languages.dat')
 
     # Plot dataframe
-    step5_plot_table(cc4, cc5)
+    step5_create_plots(cc4, cc5)
 
 
 if __name__ == '__main__':
