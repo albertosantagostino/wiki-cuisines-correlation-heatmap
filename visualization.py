@@ -51,12 +51,12 @@ def get_flags_from_demonyms(country_demonyms):
 
 def get_languages_names(language_prefixes):
     """Return a list of extended language names given a list of 2-letters prefixes"""
-    lang_lookup = json.load(open(Path('data/lookup_jsons/lookup_languages.json'), 'r'))
-    lang_lookup_dict = {kk['code']: kk['name'] for kk in lang_lookup}
     language_names = []
+    lang_lookup_wl = load_from_file(Path('data/wiki_languages.dat'))
+    lang_lookup_wl_dict = {kk: vv['eng_name'] for kk,vv in lang_lookup_wl.items()}
     for lang in language_prefixes:
         try:
-            language_names.append(f"{lang_lookup_dict[lang]}")
+            language_names.append(f"{lang_lookup_wl_dict[lang]}")
         except KeyError:
             language_names.append(f"{lang}")
 
@@ -167,9 +167,19 @@ def step5_create_plots(df, df_full):
                                                      'colorscale': defs.HEATMAP_COLORSCALE_BLUE}),
                                  layout=CUMULATIVE_GRAPHS_LAYOUT)
 
-    fig_sum_languages = go.Figure(data=go.Bar(x=df_full.sum().index,
-                                              y=df_full.sum().values,
-                                              marker={'color': df_full.sum().values,
+    languages = df_full.sum().index.to_list()
+    values = df_full.sum().values
+    if defs.X_LANGUAGES_GRAPH_REPLACE_LANGUAGES_ABBREVIATIONS:
+        renaming_map = {lang: name for lang, name in zip(languages, get_languages_names(languages))}
+        full_languages = []
+        for lang_prefix in df_full.sum().index.to_list():
+            full_languages.append(renaming_map[lang_prefix])
+        sorted_data = sorted(zip(full_languages, values), key=lambda x: x[0])
+        languages, values = [x[0] for x in sorted_data], [x[1] for x in sorted_data]
+
+    fig_sum_languages = go.Figure(data=go.Bar(x=languages,
+                                              y=values,
+                                              marker={'color': values,
                                                       'colorscale': defs.HEATMAP_COLORSCALE_BLUE}),
                                   layout=CUMULATIVE_GRAPHS_LAYOUT)
 

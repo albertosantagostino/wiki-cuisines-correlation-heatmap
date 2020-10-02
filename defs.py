@@ -6,12 +6,13 @@ Constants/settings definition
 
 # Thresholds for processing and data creation
 THRESHOLD_MIN_CUISINES = 14
-THRESHOLD_MIN_LANGUAGES = 12
+THRESHOLD_MIN_LANGUAGES = 13
 THRESHOLD_MIN_VOICE_LENGTH = 4000
 
 # Preprocessing for visualization
 Y_REPLACE_LANGUAGES_ABBREVIATIONS = True
 X_ADD_FLAGS = True
+X_LANGUAGES_GRAPH_REPLACE_LANGUAGES_ABBREVIATIONS = True
 
 # Figure layout
 MARKER_ON_DIAGONAL_CELLS = True
