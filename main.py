@@ -7,24 +7,23 @@ Script to create an heatmap between Wikipedia cuisines pages
 import pandas as pd
 import numpy as np
 import requests
-import wikipedia as wiki
 
 from bs4 import BeautifulSoup
 from pathlib import Path
 from urllib.parse import unquote
-from urllib.request import urlopen
 from tqdm import tqdm
 
-from utils import strip_url, save_to_file, load_from_file, execute_steps
+from utils import strip_url, save_to_file, load_from_file, execute_steps, split_to_chunks
 from visualization import step5_create_plots
 import defs
 
 
 def step1_prepare_cuisines_data():
-    cuisines_template_page = wiki.WikipediaPage('Template:Cuisines')
-    soup = BeautifulSoup(cuisines_template_page.html(), features='html.parser')
+    req = requests.get('https://en.wikipedia.org/wiki/Template:Cuisines')
+    soup = BeautifulSoup(req.text, features='html.parser')
     html_cuisines = soup.find(title='National dish').find_next('ul')
-    cuisines_raw = dict()
+    cuisines_titles = []
+    skipped = []
     for ch in html_cuisines:
         if not isinstance(ch, str):
             if len(ch.find_all('a')) > 1:
@@ -36,16 +35,25 @@ def step1_prepare_cuisines_data():
             # If it's not a redirect to a different page (e.g.: "cuisine" section in the country page)
             if not cuisine.get('class'):
                 title, href = cuisine.get('title'), cuisine.get('href')
-                cuisines_raw[title] = unquote(href.replace('/wiki/', ''))
+                cuisines_titles.append((title, unquote(href.replace('/wiki/', ''))))
             elif 'mw-redirect' in cuisine.get('class'):
-                print(f"Skipping '{cuisine.get('title')}' as it's only a redirect")
+                skipped.append(cuisine.get('title'))
             else:
-                print("Unhandled case")
+                raise ValueError(f"Undefined case: {cuisine}")
+    if skipped:
+        for skip in skipped:
+            print(f"[Skip] {skip} (redirect)")
 
-    print("Creating cuisines dictionary...")
-    for kk, vv in tqdm(cuisines_raw.items()):
-        cuisines_raw[kk] = {'page': wiki.WikipediaPage(vv), 'languages': {}}
-
+    api_url = 'https://en.wikipedia.org/w/api.php'
+    params = {'action': 'query', 'format': 'json'}
+    cuisines_raw = {}
+    for chunk in split_to_chunks(cuisines_titles, 50):
+        params['titles'] = f"{'|'.join([c[1] for c in chunk])}"
+        with requests.Session() as session:
+            post = session.post(api_url, params)
+            res = post.json()
+        for vv in res['query']['pages'].values():
+            cuisines_raw[vv['title']] = {'pageid': str(vv['pageid']), 'languages': {}}
     save_to_file('data/cuisines_raw.dat', cuisines_raw)
 
 
@@ -55,8 +63,8 @@ def step2_populate_other_languages():
     wiki_url = 'https://en.wikipedia.org/w/api.php'
     params = {'action': 'query', 'prop': 'langlinks|info', 'llprop': 'url', 'lllimit': 'max', 'format': 'json'}
     print("Getting links for every cuisine for every language...")
-    for kk, vv in tqdm(cuisines_raw.items()):
-        pageid = vv['page'].pageid
+    for vv in tqdm(cuisines_raw.values()):
+        pageid = vv['pageid']
         params['pageids'] = pageid
         with requests.Session() as session:
             post = session.post(wiki_url, params)
@@ -77,9 +85,10 @@ def step2_populate_other_languages():
 
 
 def step3_fill_lengths():
-    # TODO: Refactor: group together pages and do only one request for every xyz.wikipedia.org
+    # TODO: refactor grouping together pages, do only one request for every xyz.wikipedia.org
     cuisines = load_from_file('data/cuisines_langs.dat')
     params = {'action': 'query', 'prop': 'info', 'format': 'json'}
+    skipped = []
     for kk, vv in tqdm(cuisines.items()):
         for lang_prefix, page in tqdm(vv['languages'].items()):
             if lang_prefix != 'en':
@@ -97,14 +106,17 @@ def step3_fill_lengths():
                 if 'length' in page_data:
                     vv['languages'][lang_prefix]['length'] = page_data['length']
                 else:
-                    print(f"No length for {kk} in language {lang_prefix}, skipped")
+                    skipped.append((kk, lang_prefix))
+    if skipped:
+        for page, lang in skipped:
+            print(f"[Skip] {page} in language {lang} (unavailable length)")
     save_to_file('data/cuisines_length.dat', cuisines)
 
 
 def get_wikimedia_languages_list():
     wiki_languages = {}
-    url_wikimedia_projects = urlopen('https://meta.wikimedia.org/wiki/Table_of_Wikimedia_projects').read()
-    soup = BeautifulSoup(url_wikimedia_projects, features='html.parser')
+    req = requests.get('https://meta.wikimedia.org/wiki/Table_of_Wikimedia_projects')
+    soup = BeautifulSoup(req.text, features='html.parser')
     table = soup.find_all('table', class_='sortable')[0]
     for tr in table.find_all('tr'):
         tds = tr.find_all('td')
@@ -196,6 +208,7 @@ def main():
         execute_steps(STEPS, [i for i in range(2, len(STEPS))])
     elif not Path('data/table_dataframe.dat').exists():
         execute_steps(STEPS, [i for i in range(3, len(STEPS))])
+    if not Path('data/table_dataframe_full.dat').exists():
         step4_preprocess_data_frame(no_threshold_application=True)
 
     if not Path('data/wiki_languages.dat').exists():

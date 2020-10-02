@@ -464,18 +464,6 @@ python-versions = "*"
 version = "0.2.5"
 
 [[package]]
-category = "main"
-description = "Wikipedia API for Python"
-name = "wikipedia"
-optional = false
-python-versions = "*"
-version = "1.4.0"
-
-[package.dependencies]
-beautifulsoup4 = "*"
-requests = ">=2.0.0,<3.0.0"
-
-[[package]]
 category = "dev"
 description = "Module for decorators, wrappers and monkey patching."
 name = "wrapt"
@@ -484,7 +472,7 @@ python-versions = "*"
 version = "1.12.1"
 
 [metadata]
-content-hash = "c2d324ff8e575e0dea0847a44434be7f159d88202f774987fdabde4801503c8d"
+content-hash = "27b65a5baca8dbf2ff8c1535626b5c5b86c4af3b27ce4eba3c5a18f3d4ad8224"
 lock-version = "1.0"
 python-versions = "^3.8"
 
@@ -719,9 +707,6 @@ urllib3 = [
 wcwidth = [
     {file = "wcwidth-0.2.5-py2.py3-none-any.whl", hash = "sha256:beb4802a9cebb9144e99086eff703a642a13d6a0052920003a230f3294bbe784"},
     {file = "wcwidth-0.2.5.tar.gz", hash = "sha256:c4d647b99872929fdb7bdcaa4fbe7f01413ed3d98077df798530e5b04f116c83"},
-]
-wikipedia = [
-    {file = "wikipedia-1.4.0.tar.gz", hash = "sha256:db0fad1829fdd441b1852306e9856398204dc0786d2996dd2e0c8bb8e26133b2"},
 ]
 wrapt = [
     {file = "wrapt-1.12.1.tar.gz", hash = "sha256:b62ffa81fb85f4332a4f609cab4ac40709470da05643a082ec1eb88e6d9b97d7"},
