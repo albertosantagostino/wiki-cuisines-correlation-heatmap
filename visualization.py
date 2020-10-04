@@ -28,7 +28,8 @@ CUMULATIVE_GRAPHS_LAYOUT = {'xaxis': {'tickangle': 60,
                             'plot_bgcolor': 'rgb(245,245,250)'}
 # yapf: disable
 
-def create_heatmap(df, ADD_FLAGS, DIAGONAL_MARKERS):
+def create_heatmap(df, ADD_FLAGS, DIAGONAL_MARKERS, REMOVE_CUISINE_OF=False):
+    """Create an heatmap to correlate cuisines and languages"""
     if defs.Y_REPLACE_LANGUAGES_ABBREVIATIONS:
         languages = df.index.to_list()
         renaming_map = {lang: name for lang, name in zip(languages, get_languages_names(languages))}
@@ -51,11 +52,18 @@ def create_heatmap(df, ADD_FLAGS, DIAGONAL_MARKERS):
     if ADD_FLAGS:
         flags = get_flags_from_demonyms(xlabels)
         new_xlabels = []
-        for nationality, flag in zip(xlabels, flags):
-            if nationality != flag:
-                new_xlabels.append(f"{flag} {nationality}")
+        for cuisine, flag in zip(xlabels, flags):
+            if cuisine != flag:
+                new_xlabels.append(f"{flag} {cuisine}")
             else:
                 new_xlabels.append(f"{flag}")
+        xlabels = new_xlabels
+
+    # Remove 'Cuisine of' from x axis
+    if REMOVE_CUISINE_OF:
+        new_xlabels = []
+        for cuisine in xlabels:
+            new_xlabels.append(cuisine.replace('Cuisine of',''))
         xlabels = new_xlabels
 
     # yapf: disable
@@ -96,7 +104,8 @@ def create_heatmap(df, ADD_FLAGS, DIAGONAL_MARKERS):
     return fig_hm
 
 
-def create_sum_cuisines(df_full):
+def create_bar_sum_cuisines(df_full):
+    """Create a bar graph to show which cuisines have the highest cumulative length"""
     fig_sum_cuisines = go.Figure(data=go.Bar(x=df_full.transpose().sum().index,
                                              y=df_full.transpose().sum().values,
                                              marker={
@@ -107,7 +116,8 @@ def create_sum_cuisines(df_full):
     return fig_sum_cuisines
 
 
-def create_sum_languages(df_full):
+def create_bar_sum_languages(df_full):
+    """Create a bar graph to show which languages have the highest cumulative length"""
     # yapf: disable
     languages = df_full.sum().index.to_list()
     values = df_full.sum().values
@@ -131,44 +141,39 @@ def create_sum_languages(df_full):
 
 
 def step5_create_plots(df, df_full):
+    """Produce and store graphs/plots"""
+    figures = {}
     pd.options.plotting.backend = 'plotly'
 
-    # Replace language abbreviation with language name, sort the DataFrame
+    # Prepare data frames
     df = df.transpose()
     df_full = df_full.drop(['cuisine'], axis=1)
 
-    figures = {}
-
     # Create heatmap
     fig_hm = create_heatmap(df, defs.X_ADD_FLAGS, defs.MARKER_ON_DIAGONAL_CELLS)
+    figures['correlation_heatmap'] = fig_hm
 
-    # (If enabled) create full heatmap
+    # Create full heatmap
     if defs.PRODUCE_FULL_HEATMAP:
-        fig_hm_full = create_heatmap(df_full.transpose(), False, False)
+        fig_hm_full = create_heatmap(df_full.transpose(), False, False, True)
         figures['correlation_heatmap_full'] = fig_hm_full
 
     # Create statistics graphs
-    fig_sum_cuisines = create_sum_cuisines(df_full)
-    fig_sum_languages = create_sum_languages(df_full)
+    fig_sum_cuisines = create_bar_sum_cuisines(df_full)
+    figures['cumulative_cuisines_length'] = fig_sum_cuisines
+    fig_sum_languages = create_bar_sum_languages(df_full)
+    figures['cumulative_languages_length'] = fig_sum_languages
 
     # Create histogram
     if defs.PRODUCE_HISTOGRAM:
         fig_hist = df_full.hist()
         figures['historgram'] = fig_hist
 
-    # yapf: disable
-    figures.update({
-        'correlation_heatmap': fig_hm,
-        'cumulative_cuisines_length': fig_sum_cuisines,
-        'cumulative_languages_length': fig_sum_languages
-    })
-    # yapf: enable
-
+    # Create statistics
     if defs.STORE_STATISTICS:
         pd.set_option('display.float_format', '{:.0f}'.format)
         pd.set_option('display.max_rows', None)
         pd.set_option('display.max_colwidth', None)
-
         # Cuisine leaderboard
         sum_data = df_full.transpose().sum().astype(int)
         leaderboard = sum_data.to_frame('length').sort_values('length', ascending=False)[0:30]
@@ -178,7 +183,6 @@ def step5_create_plots(df, df_full):
         ]
         with open(Path(f'results/cuisines_leaderboard.md'), 'w') as fp:
             fp.write(leaderboard.to_markdown())
-
         # Top voices
         cc2 = load_from_file('data/cuisines_langs.dat')
         df_topvoices = pd.DataFrame(columns=['cuisine', 'language', 'length', 'url'])

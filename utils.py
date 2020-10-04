@@ -45,6 +45,7 @@ def get_languages_names(language_prefixes):
 
 
 def check_if_diagonal_value(mm, nn):
+    """Check if cuisine and languages match and return cell text"""
     mm = emoji.demojize(mm, delimiters=('<<', '>>'))
     mm = re.sub(r'<<.*?>>', '', mm).strip()
 
@@ -62,7 +63,6 @@ def check_if_diagonal_value(mm, nn):
     except KeyError:
         print(f"Unknown key ({country})")
         return ''
-
     if language.lower() == nn.lower():
         return '<b>●</b>'
     else:

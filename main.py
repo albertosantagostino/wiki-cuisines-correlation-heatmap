@@ -13,12 +13,13 @@ from pathlib import Path
 from urllib.parse import unquote
 from tqdm import tqdm
 
+import defs
 from utils import strip_url, save_to_file, load_from_file, execute_steps, split_to_chunks
 from visualization import step5_create_plots
-import defs
 
 
 def step1_prepare_cuisines_data():
+    """Create a data structure starting from the cuisines list in Template:Cuisines"""
     req = requests.get('https://en.wikipedia.org/wiki/Template:Cuisines')
     soup = BeautifulSoup(req.text, features='html.parser')
     html_cuisines = soup.find(title='National dish').find_next('ul')
@@ -58,6 +59,7 @@ def step1_prepare_cuisines_data():
 
 
 def step2_populate_other_languages():
+    """Gets URLs and titles of cuisines in multiple languages"""
     cuisines_raw = load_from_file('data/cuisines_raw.dat')
 
     wiki_url = 'https://en.wikipedia.org/w/api.php'
@@ -85,8 +87,10 @@ def step2_populate_other_languages():
 
 
 def step3_fill_lengths():
-    # TODO: refactor grouping together pages, do only one request for every xyz.wikipedia.org
+    """Retrieve the lengths of the pages via APIs"""
     cuisines = load_from_file('data/cuisines_langs.dat')
+
+    # TODO: refactor grouping together pages, do only one request for every xyz.wikipedia.org
     params = {'action': 'query', 'prop': 'info', 'format': 'json'}
     skipped = []
     for kk, vv in tqdm(cuisines.items()):
@@ -113,25 +117,12 @@ def step3_fill_lengths():
     save_to_file('data/cuisines_length.dat', cuisines)
 
 
-def get_wikimedia_languages_list():
-    wiki_languages = {}
-    req = requests.get('https://meta.wikimedia.org/wiki/Table_of_Wikimedia_projects')
-    soup = BeautifulSoup(req.text, features='html.parser')
-    table = soup.find_all('table', class_='sortable')[0]
-    for tr in table.find_all('tr'):
-        tds = tr.find_all('td')
-        if not tds:
-            continue
-        code, english_name, local_name = [td.text.strip() for td in tds[:3]]
-        code = code.replace(':', '')
-        wiki_languages[code] = {'eng_name': english_name, 'local_name': local_name}
-    save_to_file('data/wiki_languages.dat', wiki_languages)
-
-
-def step4_preprocess_data_frame(no_threshold_application=False):
+def step4_preprocess_data_frame(create_full_df=False):
+    """Create pandas DataFrames filtering out undesired data"""
     cuisines = load_from_file('data/cuisines_length.dat')
 
-    if no_threshold_application:
+    # Set values (depending if dataframe/dataframe_full is to create)
+    if create_full_df:
         threshold_min_voice_length = 0
         threshold_min_cuisines = 0
         threshold_min_languages = 0
@@ -199,6 +190,22 @@ STEPS = [step1_prepare_cuisines_data,
 # yapf: enable
 
 
+def get_wikimedia_languages_list():
+    """Download and create a correlation dict from language prefixes to long language names"""
+    wiki_languages = {}
+    req = requests.get('https://meta.wikimedia.org/wiki/Table_of_Wikimedia_projects')
+    soup = BeautifulSoup(req.text, features='html.parser')
+    table = soup.find_all('table', class_='sortable')[0]
+    for tr in table.find_all('tr'):
+        tds = tr.find_all('td')
+        if not tds:
+            continue
+        code, english_name, local_name = [td.text.strip() for td in tds[:3]]
+        code = code.replace(':', '')
+        wiki_languages[code] = {'eng_name': english_name, 'local_name': local_name}
+    save_to_file('data/wiki_languages.dat', wiki_languages)
+
+
 def main():
     if not Path('data/cuisines_raw.dat').exists():
         execute_steps(STEPS, [i for i in range(0, len(STEPS))])
@@ -209,20 +216,19 @@ def main():
     elif not Path('data/table_dataframe.dat').exists():
         execute_steps(STEPS, [i for i in range(3, len(STEPS))])
     if not Path('data/table_dataframe_full.dat').exists():
-        step4_preprocess_data_frame(no_threshold_application=True)
-
+        step4_preprocess_data_frame(create_full_df=True)
     if not Path('data/wiki_languages.dat').exists():
         get_wikimedia_languages_list()
 
     cc1 = load_from_file('data/cuisines_raw.dat')
     cc2 = load_from_file('data/cuisines_langs.dat')
     cc3 = load_from_file('data/cuisines_length.dat')
-    cc4 = load_from_file('data/table_dataframe.dat')
-    cc5 = load_from_file('data/table_dataframe_full.dat')
     wl = load_from_file('data/wiki_languages.dat')
+    df = load_from_file('data/table_dataframe.dat')
+    df_full = load_from_file('data/table_dataframe_full.dat')
 
     # Plot dataframe
-    step5_create_plots(cc4, cc5)
+    step5_create_plots(df, df_full)
 
 
 if __name__ == '__main__':
