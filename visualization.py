@@ -5,15 +5,12 @@ Visualization and plotting
 """
 
 import copy
-import emoji
-import json
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
-import re
 
 from pathlib import Path
-from utils import load_from_file
+from utils import get_flags_from_demonyms, get_languages_names, check_if_diagonal_value, load_from_file
 
 import defs
 
@@ -31,69 +28,7 @@ CUMULATIVE_GRAPHS_LAYOUT = {'xaxis': {'tickangle': 60,
                             'plot_bgcolor': 'rgb(245,245,250)'}
 # yapf: disable
 
-def get_flags_from_demonyms(country_demonyms):
-    """Return a list of flags that correspond with the provided list of demonyms (adjectives)"""
-    country_demonyms_lookup = json.load(open(Path('data/lookup_jsons/lookup_countries_demonyms.json'), 'r'))[0]
-    flags = []
-    for demonym in country_demonyms:
-        try:
-            country = country_demonyms_lookup[demonym].replace(' ', '_')
-            flag = emoji.emojize(f':{country}:', use_aliases=True)
-            if flag == f':{country}:':
-                flag = emoji.emojize(f':flag_for_{country}:', use_aliases=True)
-            flags.append(flag)
-        except KeyError:
-            flags.append(f"{demonym}")
-            print(f"Error getting flag for {demonym}")
-
-    return flags
-
-
-def get_languages_names(language_prefixes):
-    """Return a list of extended language names given a list of 2-letters prefixes"""
-    language_names = []
-    lang_lookup_wl = load_from_file(Path('data/wiki_languages.dat'))
-    lang_lookup_wl_dict = {kk: vv['eng_name'] for kk,vv in lang_lookup_wl.items()}
-    for lang in language_prefixes:
-        try:
-            language_names.append(f"{lang_lookup_wl_dict[lang]}")
-        except KeyError:
-            language_names.append(f"{lang}")
-
-    return language_names
-
-
-def check_if_diagonal_value(mm, nn):
-    mm = emoji.demojize(mm, delimiters=('<<', '>>'))
-    #m = re.search('<<.*?>>', mm)
-    mm = re.sub(r'<<.*?>>', '', mm).strip()
-
-    # From demonym to country
-    country_demonyms_lookup = json.load(open(Path('data/lookup_jsons/lookup_countries_demonyms.json'), 'r'))[0]
-    try:
-        country = country_demonyms_lookup[mm]
-    except KeyError:
-        print(f"Unknown key ({mm})")
-        return ''
-    # From country to language
-    country_languages_lookup = json.load(open(Path('data/lookup_jsons/lookup_countries_languages.json'), 'r'))[0]
-    try:
-        language = country_languages_lookup[country]
-    except KeyError:
-        print(f"Unknown key ({country})")
-        return ''
-
-    if language.lower() == nn.lower():
-        return '<b>●</b>'
-    else:
-        return ''
-
-
-def step5_create_plots(df, df_full):
-    pd.options.plotting.backend = 'plotly'
-
-    # Replace language abbreviation with language name, sort the DataFrame
-    df = df.transpose()
+def create_heatmap(df, ADD_FLAGS, DIAGONAL_MARKERS):
     if defs.Y_REPLACE_LANGUAGES_ABBREVIATIONS:
         languages = df.index.to_list()
         renaming_map = {lang: name for lang, name in zip(languages, get_languages_names(languages))}
@@ -113,7 +48,7 @@ def step5_create_plots(df, df_full):
     xlabels = new_xlabels
 
     # Add country flags to cuisines
-    if defs.X_ADD_FLAGS:
+    if ADD_FLAGS:
         flags = get_flags_from_demonyms(xlabels)
         new_xlabels = []
         for nationality, flag in zip(xlabels, flags):
@@ -123,7 +58,6 @@ def step5_create_plots(df, df_full):
                 new_xlabels.append(f"{flag}")
         xlabels = new_xlabels
 
-    # Create figures, add annotations
     # yapf: disable
     fig_hm = go.Figure(
         data=go.Heatmap(x=xlabels,
@@ -135,16 +69,17 @@ def step5_create_plots(df, df_full):
                                   'dtick': 40000},
                         hovertemplate="Cuisine: %{x}<br>Wikipedia language: %{y}<br>Voice length: %{z}<extra></extra>"))
     annotations=[]
-    if defs.MARKER_ON_DIAGONAL_CELLS:
+    if DIAGONAL_MARKERS:
         for n, (row, ylabel) in enumerate(zip(rows, ylabels)):
             for m, (val, xlabel) in enumerate(zip(row, xlabels)):
-                annotations.append(go.layout.Annotation(text=check_if_diagonal_value(xlabel,ylabel),
-                                                        font={'color': 'white', 'size': 16},
-                                                        x=xlabels[m],
-                                                        y=ylabels[n],
-                                                        xref='x1',
-                                                        yref='y1',
-                                                        showarrow=False))
+                if text := check_if_diagonal_value(xlabel, ylabel):
+                    annotations.append(go.layout.Annotation(text=text,
+                                                            font={'color': 'white', 'size': 16},
+                                                            x=xlabels[m],
+                                                            y=ylabels[n],
+                                                            xref='x1',
+                                                            yref='y1',
+                                                            showarrow=False))
     fig_hm.update_layout(xaxis={'title': {'text': 'CUISINES','font': {'size': defs.TEXT_SIZE_AXIS_TITLE}},
                                 'side': 'top',
                                 'tickangle': -60,
@@ -157,16 +92,23 @@ def step5_create_plots(df, df_full):
                          margin={'l': 0, 'r': 0, 't': 0, 'b': 20},
                          plot_bgcolor='rgb(245,245,250)',
                          annotations=annotations)
+    # yapf: enable
+    return fig_hm
 
-    # Create statistics graphs
-    df_full = df_full.drop(['cuisine'], axis=1)
 
+def create_sum_cuisines(df_full):
     fig_sum_cuisines = go.Figure(data=go.Bar(x=df_full.transpose().sum().index,
                                              y=df_full.transpose().sum().values,
-                                             marker={'color': df_full.transpose().sum().values,
-                                                     'colorscale': defs.HEATMAP_COLORSCALE_BLUE}),
+                                             marker={
+                                                 'color': df_full.transpose().sum().values,
+                                                 'colorscale': defs.HEATMAP_COLORSCALE_BLUE
+                                             }),
                                  layout=CUMULATIVE_GRAPHS_LAYOUT)
+    return fig_sum_cuisines
 
+
+def create_sum_languages(df_full):
+    # yapf: disable
     languages = df_full.sum().index.to_list()
     values = df_full.sum().values
     if defs.X_LANGUAGES_GRAPH_REPLACE_LANGUAGES_ABBREVIATIONS:
@@ -179,31 +121,64 @@ def step5_create_plots(df, df_full):
 
     fig_sum_languages = go.Figure(data=go.Bar(x=languages,
                                               y=values,
-                                              marker={'color': values,
-                                                      'colorscale': defs.HEATMAP_COLORSCALE_BLUE}),
+                                              marker={
+                                                  'color': values,
+                                                  'colorscale': defs.HEATMAP_COLORSCALE_BLUE
+                                              }),
                                   layout=CUMULATIVE_GRAPHS_LAYOUT)
+    return fig_sum_languages
+    # yapf: enable
 
-    fig_hist = df_full.hist()
 
-    figures = {'correlation_heatmap': fig_hm,
-               'cumulative_cuisines_length': fig_sum_cuisines,
-               'cumulative_languages_length': fig_sum_languages,
-               'historgram_length': fig_hist}
+def step5_create_plots(df, df_full):
+    pd.options.plotting.backend = 'plotly'
+
+    # Replace language abbreviation with language name, sort the DataFrame
+    df = df.transpose()
+    df_full = df_full.drop(['cuisine'], axis=1)
+
+    figures = {}
+
+    # Create heatmap
+    fig_hm = create_heatmap(df, defs.X_ADD_FLAGS, defs.MARKER_ON_DIAGONAL_CELLS)
+
+    # (If enabled) create full heatmap
+    if defs.PRODUCE_FULL_HEATMAP:
+        fig_hm_full = create_heatmap(df_full.transpose(), False, False)
+        figures['correlation_heatmap_full'] = fig_hm_full
+
+    # Create statistics graphs
+    fig_sum_cuisines = create_sum_cuisines(df_full)
+    fig_sum_languages = create_sum_languages(df_full)
+
+    # Create histogram
+    if defs.PRODUCE_HISTOGRAM:
+        fig_hist = df_full.hist()
+        figures['historgram'] = fig_hist
+
+    # yapf: disable
+    figures.update({
+        'correlation_heatmap': fig_hm,
+        'cumulative_cuisines_length': fig_sum_cuisines,
+        'cumulative_languages_length': fig_sum_languages
+    })
     # yapf: enable
 
     if defs.STORE_STATISTICS:
         pd.set_option('display.float_format', '{:.0f}'.format)
         pd.set_option('display.max_rows', None)
         pd.set_option('display.max_colwidth', None)
+
         # Cuisine leaderboard
         sum_data = df_full.transpose().sum().astype(int)
-        leaderboard = sum_data.to_frame('length').sort_values('length', ascending=False)
+        leaderboard = sum_data.to_frame('length').sort_values('length', ascending=False)[0:30]
         leaderboard.index = [
             f"{flag} {cuisine}"
             for flag, cuisine in zip(get_flags_from_demonyms(leaderboard.index), leaderboard.index.to_list())
         ]
         with open(Path(f'results/cuisines_leaderboard.md'), 'w') as fp:
             fp.write(leaderboard.to_markdown())
+
         # Top voices
         cc2 = load_from_file('data/cuisines_langs.dat')
         df_topvoices = pd.DataFrame(columns=['cuisine', 'language', 'length', 'url'])
