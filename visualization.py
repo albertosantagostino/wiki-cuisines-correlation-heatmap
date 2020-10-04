@@ -59,11 +59,11 @@ def create_heatmap(df, ADD_FLAGS, DIAGONAL_MARKERS, REMOVE_CUISINE_OF=False):
                 new_xlabels.append(f"{flag}")
         xlabels = new_xlabels
 
-    # Remove 'Cuisine of' from x axis
+    # Remove 'Cuisine of ' from x axis
     if REMOVE_CUISINE_OF:
         new_xlabels = []
         for cuisine in xlabels:
-            new_xlabels.append(cuisine.replace('Cuisine of',''))
+            new_xlabels.append(cuisine.replace('Cuisine of ',''))
         xlabels = new_xlabels
 
     # yapf: disable
@@ -75,7 +75,7 @@ def create_heatmap(df, ADD_FLAGS, DIAGONAL_MARKERS, REMOVE_CUISINE_OF=False):
                         colorscale=defs.HEATMAP_COLORSCALE_BLUE,
                         colorbar={'tick0': defs.THRESHOLD_MIN_VOICE_LENGTH,
                                   'dtick': 40000},
-                        hovertemplate="Cuisine: %{x}<br>Wikipedia language: %{y}<br>Voice length: %{z}<extra></extra>"))
+                        hovertemplate="Cuisine: %{x}<br>Wikipedia language: %{y}<br>Page length: %{z}<extra></extra>"))
     annotations=[]
     if DIAGONAL_MARKERS:
         for n, (row, ylabel) in enumerate(zip(rows, ylabels)):
@@ -106,13 +106,17 @@ def create_heatmap(df, ADD_FLAGS, DIAGONAL_MARKERS, REMOVE_CUISINE_OF=False):
 
 def create_bar_sum_cuisines(df_full):
     """Create a bar graph to show which cuisines have the highest cumulative length"""
-    fig_sum_cuisines = go.Figure(data=go.Bar(x=df_full.transpose().sum().index,
+    x = []
+    for cuisine in df_full.transpose().sum().index.to_list():
+        x.append(cuisine.replace('Cuisine of ',''))
+    fig_sum_cuisines = go.Figure(data=go.Bar(x=x,
                                              y=df_full.transpose().sum().values,
                                              marker={
                                                  'color': df_full.transpose().sum().values,
                                                  'colorscale': defs.HEATMAP_COLORSCALE_BLUE
                                              }),
                                  layout=CUMULATIVE_GRAPHS_LAYOUT)
+    fig_sum_cuisines.update_layout(xaxis={'title': {'text': 'CUISINES','font': {'size': defs.TEXT_SIZE_AXIS_TITLE}}})
     return fig_sum_cuisines
 
 
@@ -136,6 +140,7 @@ def create_bar_sum_languages(df_full):
                                                   'colorscale': defs.HEATMAP_COLORSCALE_BLUE
                                               }),
                                   layout=CUMULATIVE_GRAPHS_LAYOUT)
+    fig_sum_languages.update_layout(xaxis={'title': {'text': 'LANGUAGES','font': {'size': defs.TEXT_SIZE_AXIS_TITLE}}})
     return fig_sum_languages
     # yapf: enable
 
@@ -187,11 +192,11 @@ def step5_create_plots(df, df_full):
         cc2 = load_from_file('data/cuisines_langs.dat')
         df_topvoices = pd.DataFrame(columns=['cuisine', 'language', 'length', 'url'])
         # yapf: disable
-        for cuisine, row in df_full.iterrows():
-            for language, length in row.to_frame('length').sort_values('length',ascending=False)[0:3]['length'].iteritems():
+        for cuisine, rw in df_full.iterrows():
+            for lang, length in rw.to_frame('length').sort_values('length',ascending=False)[0:3]['length'].iteritems():
                 if not np.isnan(length):
                     df_topvoices = df_topvoices.append({'cuisine': cuisine,
-                                                        'language': language,
+                                                        'language': lang,
                                                         'length': length,},
                                                        ignore_index=True)
         # yapf: enable
