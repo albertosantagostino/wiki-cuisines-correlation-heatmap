@@ -32,3 +32,6 @@ MANIFEST
 # Data .dat files
 data/**.dat
 
+# Results (not images)
+results/**.html
+results/**.md
